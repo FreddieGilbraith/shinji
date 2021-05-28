@@ -32,7 +32,8 @@ function matchDriverToStep(driverModules, step) {
 			driverModule.module,
 		)) {
 			if (matcher.test(step.text)) {
-				return { exportName, modulePath };
+				const matches = step.text.match(matcher).groups;
+				return { exportName, modulePath, matches };
 			}
 		}
 	}
@@ -65,7 +66,15 @@ function generateAvaTestFromPickle(driverModules, outputFilename, pickle) {
 			testAdditions.exportName,
 		];
 
-		testSteps.push(`await ${testAdditions.exportName}(t)`);
+		if (testAdditions.matches) {
+			testSteps.push(
+				`await ${testAdditions.exportName}(${JSON.stringify(
+					testAdditions.matches,
+				)}, t)`,
+			);
+		} else {
+			testSteps.push(`await ${testAdditions.exportName}(t)`);
+		}
 	}
 
 	const stringifiedTest = `
@@ -102,8 +111,10 @@ async function generateAvaTestFileFromFeatureFilePath(
 			requiredImports,
 		)) {
 			importBlock[modulePath] = [
-				...(importBlock[modulePath] || []),
-				...importedFns,
+				...new Set([
+					...(importBlock[modulePath] || []),
+					...importedFns,
+				]),
 			];
 		}
 	}
@@ -118,10 +129,12 @@ async function generateAvaTestFileFromFeatureFilePath(
 		`
 		import test from "ava";
 
-		${Object.entries(importBlock).map(
-			([modulePath, importedFns]) =>
-				`import { ${importedFns.join(", ")} } from "${modulePath}"`,
-		)}
+		${Object.entries(importBlock)
+			.map(
+				([modulePath, importedFns]) =>
+					`import { ${importedFns.join(", ")} } from "${modulePath}"`,
+			)
+			.join("\n")}
 
 	${testBodys.join("\n\n")}
 	`,

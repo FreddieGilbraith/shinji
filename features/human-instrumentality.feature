@@ -10,6 +10,7 @@ Feature: Human Instrumentality
 		Given I am Misato
 		When I arrive home
 		Then I feed PenPen
+		Then I feed Misato
 
 	#Scenario: End Credits
 		#Given the episode is over
@@ -18,7 +19,6 @@ Feature: Human Instrumentality
 			#| lineN | words                        |
 			#| 1     | fly me to the moon           |
 			#| 2     | let me play amoung the stars |
-
 
 	#@questionableEthics
 	#Scenario Outline: Shouting at Teens
