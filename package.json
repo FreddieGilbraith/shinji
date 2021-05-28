@@ -1,5 +1,6 @@
 {
 	"name": "shinji",
+	"type": "module",
 	"version": "0.0.0",
 	"description": "",
 	"main": "dist/index.js",
@@ -20,15 +21,9 @@
 	"module": "dist/index.module.js",
 	"unpkg": "dist/index.umd.js",
 	"exports": "./dist/foo.modern.js",
-	"files": [
-		"/src",
-		"/dist",
-		"/README.md"
-	],
+	"files": ["/src", "/dist", "/README.md"],
 	"babel": {
-		"presets": [
-			"@babel/preset-env"
-		]
+		"presets": ["@babel/preset-env"]
 	},
 	"eslintConfig": {
 		"extends": "@little-bonsai"
@@ -39,9 +34,7 @@
 		"useTabs": true,
 		"overrides": [
 			{
-				"files": [
-					"**/*.md"
-				],
+				"files": ["**/*.md"],
 				"options": {
 					"useTabs": false,
 					"tabWidth": 2

@@ -1,11 +1,11 @@
-const fs = require("fs");
-const glob = require("glob");
-const path = require("path");
-const { promisify } = require("util");
-const prettier = require("prettier");
+import fs from "fs";
+import glob from "glob";
+import path from "path";
+import { promisify } from "util";
+import prettier from "prettier";
 
-const Gherkin = require("@cucumber/gherkin");
-const Messages = require("@cucumber/messages");
+import Gherkin from "@cucumber/gherkin";
+import Messages from "@cucumber/messages";
 
 async function parseFeatureFile(path) {
 	const readFile = promisify(fs.readFile);
@@ -24,32 +24,89 @@ async function parseFeatureFile(path) {
 	);
 }
 
-function generateAvaTestFromPickle(pickle) {
+function matchDriverToStep(driverModules, step) {
+	for (const driverModule of driverModules) {
+		const modulePath = driverModule.filePath;
+
+		for (const [exportName, { matcher }] of Object.entries(
+			driverModule.module,
+		)) {
+			if (matcher.test(step.text)) {
+				return { exportName, modulePath };
+			}
+		}
+	}
+}
+
+function generateAvaTestFromPickle(driverModules, outputFilename, pickle) {
 	const testDescription = [
 		`${pickle.name}:`,
 		...pickle.steps.map((step) => step.text),
 	].join("\n");
 
+	const testSteps = [];
+	const requiredImports = {};
+	for (const step of pickle.steps) {
+		const testAdditions = matchDriverToStep(driverModules, step);
+		if (!testAdditions) {
+			testSteps.push(
+				`t.fail("No driver found for step '${step.text}'");`,
+			);
+			continue;
+		}
+
+		const relativeModulePath = path.relative(
+			path.dirname(outputFilename),
+			testAdditions.modulePath,
+		);
+
+		requiredImports[relativeModulePath] = [
+			...(requiredImports[relativeModulePath] || []),
+			testAdditions.exportName,
+		];
+
+		testSteps.push(`await ${testAdditions.exportName}(t)`);
+	}
+
 	const stringifiedTest = `
 	${pickle.tags.map((tag) => `//${tag.name.replace("@", " ")}`).join("\n")}
-	test(\`${testDescription}\`, t =>{
-t.pass();
+	test(\`${testDescription}\`, async t =>{
+${testSteps.join("\n")}
 	});
 `;
 
-	return { stringifiedTest };
+	return { requiredImports, stringifiedTest };
 }
 
 async function generateAvaTestFileFromFeatureFilePath(
-	driverFileGlob,
+	driverModules,
 	testFolder,
 	featureFilePath,
 ) {
+	const outputFilename = path.join(
+		testFolder,
+		`${path.parse(featureFilePath).name}.test.js`,
+	);
+
 	const writeFile = promisify(fs.writeFile);
 	const prettierConfig = await prettier.resolveConfig(testFolder);
 	const pickles = await parseFeatureFile(featureFilePath);
 
-	const testSpecs = pickles.map(generateAvaTestFromPickle);
+	const testSpecs = pickles.map(
+		generateAvaTestFromPickle.bind(null, driverModules, outputFilename),
+	);
+
+	const importBlock = {};
+	for (const { requiredImports } of testSpecs) {
+		for (const [modulePath, importedFns] of Object.entries(
+			requiredImports,
+		)) {
+			importBlock[modulePath] = [
+				...(importBlock[modulePath] || []),
+				...importedFns,
+			];
+		}
+	}
 
 	const testBodys = [];
 
@@ -59,34 +116,44 @@ async function generateAvaTestFileFromFeatureFilePath(
 
 	const fullTestFile = prettier.format(
 		`
-		const test = require( "ava");
+		import test from "ava";
+		${Object.entries(importBlock).map(
+			([modulePath, importedFns]) =>
+				`import { ${importedFns.join(", ")} } from "${modulePath}"`,
+		)}
 
 	${testBodys.join("\n\n")}
 	`,
 		{ ...prettierConfig, parser: "babel" },
 	);
 
-	const outputFilename = path.join(
-		testFolder,
-		`${path.parse(featureFilePath).name}.test.js`,
-	);
-
 	await writeFile(outputFilename, fullTestFile, "utf8");
-	console.log(outputFilename);
 }
 
 (async function main() {
 	const [featureFileGlob, driverFileGlob, testFolder] = process.argv.slice(2);
 
-	const featureFilePaths = await promisify(glob, { absolute: true })(
-		featureFileGlob,
-	).then((filePaths) => filePaths.map((filePath) => path.resolve(filePath)));
+	const driverFilePaths = await promisify(glob)(driverFileGlob, {
+		absolute: true,
+	});
+	const allDriverModules = await Promise.all(
+		driverFilePaths.map((filePath) =>
+			import(filePath).then((module) => ({
+				module,
+				filePath,
+			})),
+		),
+	);
+
+	const featureFilePaths = await promisify(glob)(featureFileGlob, {
+		absolute: true,
+	});
 
 	await Promise.all(
 		featureFilePaths.map(
 			generateAvaTestFileFromFeatureFilePath.bind(
 				null,
-				driverFileGlob,
+				allDriverModules,
 				path.resolve(testFolder),
 			),
 		),
