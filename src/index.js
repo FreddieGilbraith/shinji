@@ -117,6 +117,7 @@ async function generateAvaTestFileFromFeatureFilePath(
 	const fullTestFile = prettier.format(
 		`
 		import test from "ava";
+
 		${Object.entries(importBlock).map(
 			([modulePath, importedFns]) =>
 				`import { ${importedFns.join(", ")} } from "${modulePath}"`,
