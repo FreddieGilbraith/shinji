@@ -20,15 +20,15 @@ Feature: Human Instrumentality
 			| fly  | moon  |
 			| play | stars |
 
-	#@questionableEthics
-	#Scenario Outline: Shouting at Teens
-		#Given I prepare unit <unit> for launch
-		#When I shout at <name>
-		#Then <name> should feel <mood>
+	@questionableEthics
+	Scenario Outline: Shouting at Teens
+		Given unit <unit> is prepared for launch
+		When I shout at <name>
+		Then <name> should feel <mood>
 
-		#Examples:
-			#| name   | unit | mood |
-			#| Rei    |  00  | sad  |
-			#| Shinji |  01  | sad  |
-			#| Asuka  |  02  | loud |
+		Examples:
+			| name   | unit | mood |
+			| Rei    |  00  | sad  |
+			| Shinji |  01  | sad  |
+			| Asuka  |  02  | loud |
 
