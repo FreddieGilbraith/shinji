@@ -39,6 +39,27 @@ function matchDriverToStep(driverModules, step) {
 	}
 }
 
+function formatDataTable(step) {
+	if (
+		step &&
+		step.argument &&
+		step.argument.dataTable &&
+		step.argument.dataTable.rows
+	) {
+		const parsedRows = [];
+		for (const { cells: row } of step.argument.dataTable.rows.slice(1)) {
+			const parsedRow = {};
+			for (let i = 0; i < row.length; i++) {
+				parsedRow[step.argument.dataTable.rows[0].cells[i].value] =
+					row[i].value;
+			}
+			parsedRows.push(parsedRow);
+		}
+
+		return JSON.stringify(parsedRows);
+	}
+}
+
 function generateAvaTestFromPickle(driverModules, outputFilename, pickle) {
 	const testDescription = [
 		`${pickle.name}:`,
@@ -66,15 +87,17 @@ function generateAvaTestFromPickle(driverModules, outputFilename, pickle) {
 			testAdditions.exportName,
 		];
 
-		if (testAdditions.matches) {
-			testSteps.push(
-				`await ${testAdditions.exportName}(${JSON.stringify(
-					testAdditions.matches,
-				)}, t)`,
-			);
-		} else {
-			testSteps.push(`await ${testAdditions.exportName}(t)`);
-		}
+		const theArgs = [
+			testAdditions.matches
+				? JSON.stringify(testAdditions.matches)
+				: null,
+			formatDataTable(step),
+			"t",
+		]
+			.filter(Boolean)
+			.join(", ");
+
+		testSteps.push(`await ${testAdditions.exportName}(${theArgs})`);
 	}
 
 	const stringifiedTest = `

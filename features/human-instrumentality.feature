@@ -12,13 +12,13 @@ Feature: Human Instrumentality
 		Then I feed PenPen
 		Then I feed Misato
 
-	#Scenario: End Credits
-		#Given the episode is over
-		#When the credits roll
-		#Then the audience should hear the following lyrics
-			#| lineN | words                        |
-			#| 1     | fly me to the moon           |
-			#| 2     | let me play amoung the stars |
+	Scenario: End Credits
+		Given the episode is over
+		When the credits roll
+		Then the audience should hear the following lyrics
+			| verb | noun  |
+			| fly  | moon  |
+			| play | stars |
 
 	#@questionableEthics
 	#Scenario Outline: Shouting at Teens
