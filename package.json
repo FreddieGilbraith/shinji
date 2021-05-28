@@ -1,0 +1,83 @@
+{
+	"name": "shinji",
+	"version": "0.0.0",
+	"description": "",
+	"main": "dist/index.js",
+	"scripts": {
+		"test": "jest --passWithNoTests --coverage true src test",
+		"build": "microbundle --jsx React.createElement",
+		"watch": "microbundle watch --jsx React.createElement",
+		"format": "prettier --write src/**/*",
+		"lint": "eslint . && prettier --check src/**/*",
+		"test:watch": "jest src test --watch --bail --runInBand",
+		"prepushOnly": "npm run format && npm run test && npm run build",
+		"prepublishOnly": "npm run format && npm run test && npm run build"
+	},
+	"author": "",
+	"license": "ISC",
+	"sideEffects": false,
+	"source": "src/index.js",
+	"module": "dist/index.module.js",
+	"unpkg": "dist/index.umd.js",
+	"exports": "./dist/foo.modern.js",
+	"files": [
+		"/src",
+		"/dist",
+		"/README.md"
+	],
+	"babel": {
+		"presets": [
+			"@babel/preset-env"
+		]
+	},
+	"eslintConfig": {
+		"extends": "@little-bonsai"
+	},
+	"prettier": {
+		"tabWidth": 4,
+		"trailingComma": "all",
+		"useTabs": true,
+		"overrides": [
+			{
+				"files": [
+					"**/*.md"
+				],
+				"options": {
+					"useTabs": false,
+					"tabWidth": 2
+				}
+			}
+		]
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged",
+			"pre-push": "npm run lint"
+		}
+	},
+	"lint-staged": {
+		"**/*.js": "eslint --fix",
+		"**/*.{md,js,json}": "prettier --write"
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.14.3",
+		"@babel/core": "^7.14.3",
+		"@babel/preset-env": "^7.14.2",
+		"@little-bonsai/eslint-config": "^0.1.0",
+		"ava": "^3.15.0",
+		"babel-eslint": "^10.1.0",
+		"babel-jest": "^27.0.1",
+		"babel-polyfill": "^6.26.0",
+		"babel-preset-minify": "^0.5.1",
+		"eslint": "^7.27.0",
+		"husky": "^6.0.0",
+		"jest": "^27.0.1",
+		"lint-staged": "^11.0.0",
+		"microbundle": "^0.13.1",
+		"prettier": "^2.3.0"
+	},
+	"dependencies": {
+		"@cucumber/gherkin": "^19.0.3",
+		"glob": "^7.1.7"
+	}
+}
